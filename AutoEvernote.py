@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 #coding=utf8
 #Code:Tyskin
 #reference: 
@@ -31,9 +31,12 @@ LANGUAGE= 'CN'  #'EN' #CN
 import subprocess
 
 #main strueture of this class
+#self.client
+#self.token
 #self.userStore
 #self.noteStore
-#self.homepage
+#self.user          (username,name,shardID,id)
+#self.homepage      (guid,)
 #self.CODING_IS_UTF8=True
 
 class AutoEvernote:
@@ -183,17 +186,19 @@ class AutoEvernote:
         resource.attributes=ratt
         #resource.attributes.append(ratt)
         
-        #2 add resource tag to main content        
-        note.content = '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd">'
-        note.content +="<en-note>"
-        note.content +="<br /><en-media hash=\"%s\" type=\"%s\" /><br />" % (hexhash,resource.mime)
-        note.content +="</en-note>"    
-
-        #add resource to list
+        #2 add resource tag to the end of main content        
+        resource_tag_start=note.content.rfind("</en-note>")
+        newcontent=note.content[0:resource_tag_start]
+        newcontent+="<br /><en-media hash=\"%s\" type=\"%s\" /><br />" % (hexhash,resource.mime)
+        newcontent+=note.content[resource_tag_start:]
+        note.content=newcontent
+        #3 add resource to list
         if note.resources==None: note.resources=[] 
         note.resources.append(resource)
         
-        print("append one resource at the end of note page")
+        #4 update note
+        self.noteStore.updateNote(self.token, note)
+        print("appended one resource at the end of note page")
     def note_createblank(self):
         print("")
     def sys_check_coding(self):
@@ -234,8 +239,8 @@ class AutoEvernote:
             
             if LOCAL_STORAGE: self.__set_storage()
             try:
-                thisusername = self.userStore.getUser().username
-                print ('Login Succeed as ' + thisusername + '\n')
+                self.user=self.userStore.getUser()                
+                print ('Login Succeed as ' + self.user.username + '\n')
                 loginsucceed = True
             except:
                 print('Something Wrong, maybe your tkoken not good \n')
@@ -259,7 +264,7 @@ class AutoEvernote:
             return time.strftime("%Y-%m-%d %H:%M:%S",time_local)
         else:
             return time.strftime("%Y-%m-%d %H:%M:%S",time_local)
-
+        
 #-----------------------------------------------------------------
 if __name__ == '__main__':
     e = AutoEvernote()        
